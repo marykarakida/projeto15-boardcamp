@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import categoriesRouter from "./routes/categoriesRouter.js";
+import gamesRouter from "./routes/gamesRouter.js";
 
 const app = express();
 
@@ -11,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/categories", categoriesRouter);
+app.use("/games", gamesRouter);
 
 const PORT = process.env.PORT || 4000;
 
