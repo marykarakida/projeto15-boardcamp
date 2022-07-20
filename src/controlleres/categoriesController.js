@@ -1,5 +1,16 @@
 import connection from "../databases/postgres.js";
 
+export async function listCategories(req, res) {
+    try {
+        const { rows: categories } = await connection.query("SELECT * FROM categories");
+
+        res.status(200).send(categories);
+    } catch (err) {
+        res.sendStatus(500);
+        console.log(err);
+    }
+}
+
 export async function createCategory(req, res) {
     const name = req.body.name;
 
@@ -16,6 +27,7 @@ export async function createCategory(req, res) {
 
         res.sendStatus(201);
     } catch (err) {
+        res.sendStatus(500);
         console.log(err);
     }
 }
