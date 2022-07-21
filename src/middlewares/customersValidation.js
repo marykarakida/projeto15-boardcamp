@@ -7,7 +7,6 @@ export default async function validateCustomer(req, res, next) {
     const joiValidation = customerSchema.validate(newCustomer, { abortEarly: false });
 
     if (joiValidation.error) {
-        console.log(joiValidation.error);
         return res.sendStatus(400);
     }
 
