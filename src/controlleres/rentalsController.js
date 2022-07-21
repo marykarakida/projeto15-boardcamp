@@ -75,3 +75,38 @@ export async function createRentals(req, res) {
         console.log(err);
     }
 }
+
+export async function returnRental(req, res) {
+    const id = req.params.id;
+
+    try {
+        const rental = await connection.query(`SELECT * FROM rentals WHERE id = $1`, [id]);
+
+        if (rental.rowCount === 0) {
+            return res.sendStatus(404);
+        }
+
+        if (rental.rows[0].returnDate !== null) {
+            return res.sendStatus(400);
+        }
+
+        const games = await connection.query(`SELECT * FROM games WHERE id = $1`, [rental.rows[0].gameId]);
+
+        const returnDate = dayjs().format('YYYY-MM-DD');
+        const daysLate = dayjs().diff(rental.rows[0].rentDate, 'day');
+        const delayFee = daysLate > rental.rows[0].daysRented ? daysLate * games.rows[0].pricePerDay : 0;
+
+        await connection.query(
+            `UPDATE rentals
+            SET "returnDate" = $1, "delayFee" = $2
+            WHERE id = $3
+        `,
+            [returnDate, delayFee, id]
+        );
+
+        res.sendStatus(200);
+    } catch (err) {
+        res.sendStatus(500);
+        console.log(err);
+    }
+}
