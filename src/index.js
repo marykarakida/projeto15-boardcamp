@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import categoriesRouter from './routes/categoriesRouter.js';
 import gamesRouter from './routes/gamesRouter.js';
 import customerRouter from './routes/customersRoute.js';
+import rentalsRouter from './routes/rentalsRouter.js';
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use('/categories', categoriesRouter);
 app.use('/games', gamesRouter);
 app.use('/customers', customerRouter);
+app.use('/rentals', rentalsRouter);
 
 const PORT = process.env.PORT || 4000;
 
