@@ -2,6 +2,41 @@ import dayjs from 'dayjs';
 
 import connection from '../databases/postgres.js';
 
+export async function listRentals(req, res) {
+    const { customerId, gameId } = req.query;
+
+    try {
+        let filter;
+        const query = [];
+
+        if (customerId && gameId) {
+            filter = 'WHERE "customerId" = $1 AND "gameId" = $2';
+            query.push(customerId, gameId);
+        } else if (customerId) {
+            filter = 'WHERE "customerId" = $1';
+            query.push(customerId);
+        } else if (gameId) {
+            filter = 'WHERE "gameId" = $1';
+            query.push(gameId);
+        }
+
+        const rentals = await connection.query(
+            `SELECT rentals.*, json_build_object('id', customers.id, 'name', customers.name) AS customer, json_build_object('id', games.id, 'name', games.name, 'categoryName', games.\"categoryId\", 'categoryId', categories.name) AS game FROM rentals
+                JOIN customers ON customers.id = \"customerId\"
+                JOIN games ON games.id = \"gameId\"
+                JOIN categories ON \"categoryId\" = categories.id
+                ${filter}
+        `,
+            query
+        );
+
+        res.status(200).send(rentals.rows);
+    } catch (err) {
+        res.sendStatus(500);
+        console.log(err);
+    }
+}
+
 export async function createRentals(req, res) {
     const { customerId, gameId, daysRented } = req.body;
 
