@@ -36,3 +36,20 @@ export async function createCustomer(req, res) {
         console.log(err);
     }
 }
+
+export async function fetchUser(req, res) {
+    const customerId = req.params.id;
+
+    try {
+        const customer = await connection.query('SELECT * FROM customers WHERE id = $1', [customerId]);
+
+        if (customer.rowCount === 0) {
+            return res.sendStatus(404);
+        }
+
+        res.status(200).send(customer.rows);
+    } catch (err) {
+        res.sendStatus(500);
+        console.log(err);
+    }
+}
