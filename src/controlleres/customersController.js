@@ -79,7 +79,7 @@ export async function fetchCustomer(req, res) {
             return res.sendStatus(404);
         }
 
-        res.status(200).send(customer.rows);
+        res.status(200).send(customer.rows[0]);
     } catch (err) {
         res.sendStatus(500);
         console.log(err);
