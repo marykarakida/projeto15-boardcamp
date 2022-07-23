@@ -1,8 +1,23 @@
 import connection from '../databases/postgres.js';
 
 export async function listCategories(req, res) {
+    const { limit, offset } = req.query;
+
+    let filter = '';
+    const params = [];
+
+    if (limit) {
+        filter += `LIMIT $${params.length + 1} `;
+        params.push(limit);
+    }
+
+    if (offset) {
+        filter += `OFFSET $${params.length + 1}`;
+        params.push(offset);
+    }
+
     try {
-        const { rows: categories } = await connection.query('SELECT * FROM categories');
+        const { rows: categories } = await connection.query(`SELECT * FROM categories ${filter}`, params);
 
         res.status(200).send(categories);
     } catch (err) {

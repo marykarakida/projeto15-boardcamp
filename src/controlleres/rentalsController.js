@@ -3,21 +3,46 @@ import dayjs from 'dayjs';
 import connection from '../databases/postgres.js';
 
 export async function listRentals(req, res) {
-    const { customerId, gameId } = req.query;
+    const { customerId, gameId, limit, offset } = req.query;
 
-    let filter;
-    const query = [];
+    let filter = '';
+    const params = [];
 
-    if (customerId && gameId) {
-        filter = 'WHERE "customerId" = $1 AND "gameId" = $2';
-        query.push(customerId, gameId);
-    } else if (customerId) {
-        filter = 'WHERE "customerId" = $1';
-        query.push(customerId);
-    } else if (gameId) {
-        filter = 'WHERE "gameId" = $1';
-        query.push(gameId);
+    if (customerId) {
+        filter += `WHERE "customerId" = $${params.length + 1} `;
+        params.push(customerId);
     }
+
+    if (gameId) {
+        filter += filter === '' ? `WHERE "gameId" = $${params.length + 1} ` : `AND "gameId" = $${params.length + 1} `;
+        params.push(gameId);
+    }
+
+    if (limit) {
+        filter += `LIMIT $${params.length + 1} `;
+        params.push(limit);
+    }
+
+    if (offset) {
+        filter += `OFFSET $${params.length + 1}`;
+        params.push(offset);
+    }
+
+    // switch (true) {
+    //     case customerId !== undefined:
+    //         filter += `WHERE "customerId" = $${params.length + 1} `;
+    //         params.push(customerId);
+    //     case gameId !== undefined:
+    //         filter +=
+    //             filter === '' ? `WHERE "gameId" = $${params.length + 1} ` : `AND "gameId" = $${params.length + 1} `;
+    //         params.push(gameId);
+    //     case limit !== undefined:
+    //         filter += `LIMIT $${params.length + 1} `;
+    //         params.push(limit);
+    //     case offset !== undefined:
+    //         filter += `OFFSET $${params.length + 1}`;
+    //         params.push(offset);
+    // }
 
     try {
         const rentals = await connection.query(
@@ -27,7 +52,7 @@ export async function listRentals(req, res) {
                 JOIN categories ON \"categoryId\" = categories.id
                 ${filter}
         `,
-            query
+            params
         );
 
         res.status(200).send(rentals.rows);
@@ -137,18 +162,18 @@ export async function deleteRentals(req, res) {
 export async function showMetrics(req, res) {
     const { startDate, endDate } = req.query;
 
-    let where;
-    const query = [];
+    let filter = '';
+    const params = [];
 
-    if (startDate && endDate) {
-        where = 'WHERE "rentDate" >= $1 AND "rentDate" <= $2';
-        query.push(startDate, endDate);
-    } else if (startDate) {
-        where = 'WHERE "rentDate" >= $1';
-        query.push(startDate);
-    } else if (endDate) {
-        where = 'WHERE "rentDate" <= $1';
-        query.push(endDate);
+    if (startDate) {
+        filter += `WHERE "rentDate" >= $${params.length + 1}`;
+        params.push(startDate);
+    }
+
+    if (endDate) {
+        filter +=
+            filter === '' ? `WHERE "rentDate" <= $${params.length + 1}` : `AND "rentDate" <= $${params.length + 1}`;
+        params.push(endDate);
     }
 
     try {
@@ -158,8 +183,8 @@ export async function showMetrics(req, res) {
                 COUNT(id)::double precision AS rentals, 
                 COALESCE(SUM("originalPrice" + "delayFee") / COUNT(id), 0)::double precision AS average 
             FROM rentals 
-            ${where}`,
-            query
+            ${filter}`,
+            params
         );
 
         res.status(200).send(metrics.rows[0]);

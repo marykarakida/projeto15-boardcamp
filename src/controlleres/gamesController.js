@@ -1,21 +1,37 @@
 import connection from '../databases/postgres.js';
 
 export async function listGames(req, res) {
-    const { name } = req.query;
+    const { name, limit, offset } = req.query;
+
+    let filter = '';
+    const params = [];
+
+    if (name) {
+        filter += `WHERE LOWER(games.name) LIKE LOWER($${params.length + 1}) `;
+        params.push(`${name}%`);
+    }
+
+    if (limit) {
+        filter += `LIMIT $${params.length + 1} `;
+        params.push(limit);
+    }
+
+    if (offset) {
+        filter += `OFFSET $${params.length + 1}`;
+        params.push(offset);
+    }
 
     try {
-        let games;
-
-        if (name) {
-            games = await connection.query(
-                'SELECT games.*, categories.name AS "categoryName" FROM games JOIN categories ON "categoryId" = categories.id WHERE LOWER(games.name) LIKE LOWER($1 || \'%\')',
-                [name]
-            );
-        } else {
-            games = await connection.query(
-                'SELECT games.*, categories.name AS "categoryName" FROM games JOIN categories ON "categoryId" = categories.id'
-            );
-        }
+        const games = await connection.query(
+            `SELECT 
+                games.*, 
+                categories.name AS "categoryName" 
+            FROM games 
+            JOIN categories ON 
+                "categoryId" = categories.id 
+            ${filter}`,
+            params
+        );
 
         res.status(200).send(games.rows);
     } catch (err) {
