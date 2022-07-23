@@ -5,21 +5,21 @@ import connection from '../databases/postgres.js';
 export async function listRentals(req, res) {
     const { customerId, gameId } = req.query;
 
+    let filter;
+    const query = [];
+
+    if (customerId && gameId) {
+        filter = 'WHERE "customerId" = $1 AND "gameId" = $2';
+        query.push(customerId, gameId);
+    } else if (customerId) {
+        filter = 'WHERE "customerId" = $1';
+        query.push(customerId);
+    } else if (gameId) {
+        filter = 'WHERE "gameId" = $1';
+        query.push(gameId);
+    }
+
     try {
-        let filter;
-        const query = [];
-
-        if (customerId && gameId) {
-            filter = 'WHERE "customerId" = $1 AND "gameId" = $2';
-            query.push(customerId, gameId);
-        } else if (customerId) {
-            filter = 'WHERE "customerId" = $1';
-            query.push(customerId);
-        } else if (gameId) {
-            filter = 'WHERE "gameId" = $1';
-            query.push(gameId);
-        }
-
         const rentals = await connection.query(
             `SELECT rentals.*, json_build_object('id', customers.id, 'name', customers.name) AS customer, json_build_object('id', games.id, 'name', games.name, 'categoryName', games.\"categoryId\", 'categoryId', categories.name) AS game FROM rentals
                 JOIN customers ON customers.id = \"customerId\"
@@ -128,6 +128,41 @@ export async function deleteRentals(req, res) {
         await connection.query(`DELETE FROM rentals WHERE id = $1`, [id]);
 
         res.sendStatus(200);
+    } catch (err) {
+        res.sendStatus(500);
+        console.log(err);
+    }
+}
+
+export async function showMetrics(req, res) {
+    const { startDate, endDate } = req.query;
+
+    let where;
+    const query = [];
+
+    if (startDate && endDate) {
+        where = 'WHERE "rentDate" >= $1 AND "rentDate" <= $2';
+        query.push(startDate, endDate);
+    } else if (startDate) {
+        where = 'WHERE "rentDate" >= $1';
+        query.push(startDate);
+    } else if (endDate) {
+        where = 'WHERE "rentDate" <= $1';
+        query.push(endDate);
+    }
+
+    try {
+        const metrics = await connection.query(
+            `SELECT 
+                COALESCE(SUM("originalPrice") + SUM("delayFee"), 0)::double precision AS revenue, 
+                COUNT(id)::double precision AS rentals, 
+                COALESCE(SUM("originalPrice" + "delayFee") / COUNT(id), 0)::double precision AS average 
+            FROM rentals 
+            ${where}`,
+            query
+        );
+
+        res.status(200).send(metrics.rows[0]);
     } catch (err) {
         res.sendStatus(500);
         console.log(err);
