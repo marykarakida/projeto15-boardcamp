@@ -7,7 +7,7 @@ export async function listCategories(req, res) {
     const params = [];
 
     if (order) {
-        filter += `ORDER BY ${order} ${desc ? 'DESC' : ''}`;
+        filter += `ORDER BY "${order}" ${desc ? 'DESC' : ''}`;
     }
 
     if (limit) {

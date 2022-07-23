@@ -12,7 +12,7 @@ export async function listCustomers(req, res) {
     }
 
     if (order) {
-        filter += `ORDER BY ${order} ${desc ? 'DESC' : ''}`;
+        filter += `ORDER BY "${order}" ${desc ? 'DESC' : ''}`;
     }
 
     if (limit) {
@@ -27,7 +27,12 @@ export async function listCustomers(req, res) {
 
     try {
         const customers = await connection.query(
-            `SELECT * FROM customers 
+            `SELECT 
+                customers.*,
+                COUNT(rentals.id) AS "rentalsCount"
+            FROM customers
+            JOIN rentals ON customers.id = "customerId" 
+            GROUP BY customers.id
             ${filter}`,
             params
         );

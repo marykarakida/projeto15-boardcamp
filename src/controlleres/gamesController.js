@@ -12,7 +12,7 @@ export async function listGames(req, res) {
     }
 
     if (order) {
-        filter += `ORDER BY ${order} ${desc ? 'DESC' : ''}`;
+        filter += `ORDER BY "${order}" ${desc ? 'DESC' : ''}`;
     }
 
     if (limit) {
@@ -29,10 +29,12 @@ export async function listGames(req, res) {
         const games = await connection.query(
             `SELECT 
                 games.*, 
-                categories.name AS "categoryName" 
+                categories.name AS "categoryName",
+                COUNT(rentals.id)::double precision AS "rentalsCount"
             FROM games 
-            JOIN categories ON 
-                "categoryId" = categories.id 
+            JOIN categories ON "categoryId" = categories.id 
+            LEFT JOIN rentals ON "gameId" = games.id
+            GROUP BY games.id, categories.name
             ${filter}`,
             params
         );
