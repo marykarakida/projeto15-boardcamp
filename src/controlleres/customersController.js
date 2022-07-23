@@ -11,9 +11,9 @@ export async function listCustomers(req, res) {
         params.push(`${cpf}%`);
     }
 
-    if (order) filter += `ORDER BY ${order} `;
-
-    if (order && desc) filter += `DESC `;
+    if (order) {
+        filter += `ORDER BY ${order} ${desc ? 'DESC' : ''}`;
+    }
 
     if (limit) {
         filter += `LIMIT $${params.length + 1} `;

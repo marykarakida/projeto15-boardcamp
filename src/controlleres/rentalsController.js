@@ -3,36 +3,45 @@ import dayjs from 'dayjs';
 import connection from '../databases/postgres.js';
 
 export async function listRentals(req, res) {
-    const { customerId, gameId, order, desc, limit, offset } = req.query;
+    const { customerId, gameId, status, startDate, order, desc, limit, offset } = req.query;
 
     let filter = '';
     const params = [];
 
-    if (customerId) {
-        filter += `WHERE "customerId" = $${params.length + 1} `;
-        params.push(customerId);
-    }
-
-    if (gameId) {
-        filter += filter === '' ? `WHERE "gameId" = $${params.length + 1} ` : `AND "gameId" = $${params.length + 1} `;
-        params.push(gameId);
-    }
-
-    if (order) filter += `ORDER BY ${order} `;
-
-    if (order && desc) filter += `DESC `;
-
-    if (limit) {
-        filter += `LIMIT $${params.length + 1} `;
-        params.push(limit);
-    }
-
-    if (offset) {
-        filter += `OFFSET $${params.length + 1}`;
-        params.push(offset);
-    }
-
     try {
+        if (status === 'open' || status === 'closed') {
+            filter += `WHERE "returnDate" ${status === 'open' ? 'IS NULL ' : 'IS NOT NULL '}`;
+        }
+
+        if (customerId) {
+            filter += `${filter === '' ? 'WHERE' : 'AND'} "customerId" = $${params.length + 1} `;
+            params.push(customerId);
+        }
+
+        if (gameId) {
+            filter += `${filter === '' ? 'WHERE' : 'AND'} "gameId" = $${params.length + 1} `;
+            params.push(gameId);
+        }
+
+        if (startDate) {
+            filter += `${filter === '' ? 'WHERE' : 'AND'}  "rentDate" >= $${params.length + 1} `;
+            params.push(startDate);
+        }
+
+        if (order) {
+            filter += `ORDER BY ${order} ${desc ? 'DESC' : ''}`;
+        }
+
+        if (limit) {
+            filter += `LIMIT $${params.length + 1} `;
+            params.push(limit);
+        }
+
+        if (offset) {
+            filter += `OFFSET $${params.length + 1}`;
+            params.push(offset);
+        }
+
         const rentals = await connection.query(
             `SELECT rentals.*, json_build_object('id', customers.id, 'name', customers.name) AS customer, json_build_object('id', games.id, 'name', games.name, 'categoryName', games.\"categoryId\", 'categoryId', categories.name) AS game FROM rentals
                 JOIN customers ON customers.id = \"customerId\"
@@ -154,13 +163,12 @@ export async function showMetrics(req, res) {
     const params = [];
 
     if (startDate) {
-        filter += `WHERE "rentDate" >= $${params.length + 1}`;
+        filter += `WHERE "rentDate" >= $${params.length + 1} `;
         params.push(startDate);
     }
 
     if (endDate) {
-        filter +=
-            filter === '' ? `WHERE "rentDate" <= $${params.length + 1}` : `AND "rentDate" <= $${params.length + 1}`;
+        filter += `${filter === '' ? 'WHERE' : 'AND'} "rentDate" <= $${params.length + 1}`;
         params.push(endDate);
     }
 

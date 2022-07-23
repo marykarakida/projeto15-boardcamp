@@ -11,9 +11,9 @@ export async function listGames(req, res) {
         params.push(`${name}%`);
     }
 
-    if (order) filter += `ORDER BY ${order} `;
-
-    if (order && desc) filter += `DESC `;
+    if (order) {
+        filter += `ORDER BY ${order} ${desc ? 'DESC' : ''}`;
+    }
 
     if (limit) {
         filter += `LIMIT $${params.length + 1} `;
