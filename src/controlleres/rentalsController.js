@@ -177,7 +177,7 @@ export async function showMetrics(req, res) {
             `SELECT 
                 COALESCE(SUM("originalPrice") + SUM("delayFee"), 0)::double precision AS revenue, 
                 COUNT(id)::double precision AS rentals, 
-                COALESCE(SUM("originalPrice" + "delayFee") / COUNT(id), 0)::double precision AS average 
+                COALESCE((SUM("originalPrice") + SUM("delayFee")) / COUNT(id), 0)::double precision AS average 
             FROM rentals 
             ${filter}`,
             params
