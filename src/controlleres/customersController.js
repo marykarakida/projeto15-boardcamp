@@ -29,9 +29,10 @@ export async function listCustomers(req, res) {
         const customers = await connection.query(
             `SELECT 
                 customers.*,
-                COUNT(rentals.id) AS "rentalsCount"
+                birthday::VARCHAR,
+                COUNT(rentals.id)::double precision AS "rentalsCount"
             FROM customers
-            JOIN rentals ON customers.id = "customerId" 
+            LEFT JOIN rentals ON customers.id = "customerId" 
             GROUP BY customers.id
             ${filter}`,
             params
