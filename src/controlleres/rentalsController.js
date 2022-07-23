@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import connection from '../databases/postgres.js';
 
 export async function listRentals(req, res) {
-    const { customerId, gameId, limit, offset } = req.query;
+    const { customerId, gameId, order, desc, limit, offset } = req.query;
 
     let filter = '';
     const params = [];
@@ -18,6 +18,10 @@ export async function listRentals(req, res) {
         params.push(gameId);
     }
 
+    if (order) filter += `ORDER BY ${order} `;
+
+    if (order && desc) filter += `DESC `;
+
     if (limit) {
         filter += `LIMIT $${params.length + 1} `;
         params.push(limit);
@@ -27,22 +31,6 @@ export async function listRentals(req, res) {
         filter += `OFFSET $${params.length + 1}`;
         params.push(offset);
     }
-
-    // switch (true) {
-    //     case customerId !== undefined:
-    //         filter += `WHERE "customerId" = $${params.length + 1} `;
-    //         params.push(customerId);
-    //     case gameId !== undefined:
-    //         filter +=
-    //             filter === '' ? `WHERE "gameId" = $${params.length + 1} ` : `AND "gameId" = $${params.length + 1} `;
-    //         params.push(gameId);
-    //     case limit !== undefined:
-    //         filter += `LIMIT $${params.length + 1} `;
-    //         params.push(limit);
-    //     case offset !== undefined:
-    //         filter += `OFFSET $${params.length + 1}`;
-    //         params.push(offset);
-    // }
 
     try {
         const rentals = await connection.query(

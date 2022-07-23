@@ -1,7 +1,7 @@
 import connection from '../databases/postgres.js';
 
 export async function listGames(req, res) {
-    const { name, limit, offset } = req.query;
+    const { name, order, desc, limit, offset } = req.query;
 
     let filter = '';
     const params = [];
@@ -10,6 +10,10 @@ export async function listGames(req, res) {
         filter += `WHERE LOWER(games.name) LIKE LOWER($${params.length + 1}) `;
         params.push(`${name}%`);
     }
+
+    if (order) filter += `ORDER BY ${order} `;
+
+    if (order && desc) filter += `DESC `;
 
     if (limit) {
         filter += `LIMIT $${params.length + 1} `;

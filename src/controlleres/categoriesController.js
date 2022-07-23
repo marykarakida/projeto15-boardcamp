@@ -1,10 +1,14 @@
 import connection from '../databases/postgres.js';
 
 export async function listCategories(req, res) {
-    const { limit, offset } = req.query;
+    const { order, desc, limit, offset } = req.query;
 
     let filter = '';
     const params = [];
+
+    if (order) filter += `ORDER BY ${order} `;
+
+    if (order && desc) filter += `DESC `;
 
     if (limit) {
         filter += `LIMIT $${params.length + 1} `;
