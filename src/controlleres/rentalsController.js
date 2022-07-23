@@ -3,23 +3,45 @@ import dayjs from 'dayjs';
 import connection from '../databases/postgres.js';
 
 export async function listRentals(req, res) {
-    const { customerId, gameId } = req.query;
+    const { customerId, gameId, status, startDate, order, desc, limit, offset } = req.query;
 
-    let filter;
-    const query = [];
-
-    if (customerId && gameId) {
-        filter = 'WHERE "customerId" = $1 AND "gameId" = $2';
-        query.push(customerId, gameId);
-    } else if (customerId) {
-        filter = 'WHERE "customerId" = $1';
-        query.push(customerId);
-    } else if (gameId) {
-        filter = 'WHERE "gameId" = $1';
-        query.push(gameId);
-    }
+    let filter = '';
+    const params = [];
 
     try {
+        if (status === 'open' || status === 'closed') {
+            filter += `WHERE "returnDate" ${status === 'open' ? 'IS NULL ' : 'IS NOT NULL '}`;
+        }
+
+        if (customerId) {
+            filter += `${filter === '' ? 'WHERE' : 'AND'} "customerId" = $${params.length + 1} `;
+            params.push(customerId);
+        }
+
+        if (gameId) {
+            filter += `${filter === '' ? 'WHERE' : 'AND'} "gameId" = $${params.length + 1} `;
+            params.push(gameId);
+        }
+
+        if (startDate) {
+            filter += `${filter === '' ? 'WHERE' : 'AND'}  "rentDate" >= $${params.length + 1} `;
+            params.push(startDate);
+        }
+
+        if (order) {
+            filter += `ORDER BY "${order}" ${desc ? 'DESC' : ''}`;
+        }
+
+        if (limit) {
+            filter += `LIMIT $${params.length + 1} `;
+            params.push(limit);
+        }
+
+        if (offset) {
+            filter += `OFFSET $${params.length + 1}`;
+            params.push(offset);
+        }
+
         const rentals = await connection.query(
             `SELECT rentals.*, json_build_object('id', customers.id, 'name', customers.name) AS customer, json_build_object('id', games.id, 'name', games.name, 'categoryName', games.\"categoryId\", 'categoryId', categories.name) AS game FROM rentals
                 JOIN customers ON customers.id = \"customerId\"
@@ -27,7 +49,7 @@ export async function listRentals(req, res) {
                 JOIN categories ON \"categoryId\" = categories.id
                 ${filter}
         `,
-            query
+            params
         );
 
         res.status(200).send(rentals.rows);
@@ -137,18 +159,17 @@ export async function deleteRentals(req, res) {
 export async function showMetrics(req, res) {
     const { startDate, endDate } = req.query;
 
-    let where;
-    const query = [];
+    let filter = '';
+    const params = [];
 
-    if (startDate && endDate) {
-        where = 'WHERE "rentDate" >= $1 AND "rentDate" <= $2';
-        query.push(startDate, endDate);
-    } else if (startDate) {
-        where = 'WHERE "rentDate" >= $1';
-        query.push(startDate);
-    } else if (endDate) {
-        where = 'WHERE "rentDate" <= $1';
-        query.push(endDate);
+    if (startDate) {
+        filter += `WHERE "rentDate" >= $${params.length + 1} `;
+        params.push(startDate);
+    }
+
+    if (endDate) {
+        filter += `${filter === '' ? 'WHERE' : 'AND'} "rentDate" <= $${params.length + 1}`;
+        params.push(endDate);
     }
 
     try {
@@ -158,8 +179,8 @@ export async function showMetrics(req, res) {
                 COUNT(id)::double precision AS rentals, 
                 COALESCE(SUM("originalPrice" + "delayFee") / COUNT(id), 0)::double precision AS average 
             FROM rentals 
-            ${where}`,
-            query
+            ${filter}`,
+            params
         );
 
         res.status(200).send(metrics.rows[0]);

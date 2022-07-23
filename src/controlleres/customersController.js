@@ -1,16 +1,42 @@
 import connection from '../databases/postgres.js';
 
 export async function listCustomers(req, res) {
-    const { cpf } = req.query;
+    const { cpf, order, desc, limit, offset } = req.query;
+
+    let filter = '';
+    const params = [];
+
+    if (cpf) {
+        filter += `WHERE cpf LIKE $${params.length + 1} `;
+        params.push(`${cpf}%`);
+    }
+
+    if (order) {
+        filter += `ORDER BY "${order}" ${desc ? 'DESC' : ''}`;
+    }
+
+    if (limit) {
+        filter += `LIMIT $${params.length + 1} `;
+        params.push(limit);
+    }
+
+    if (offset) {
+        filter += `OFFSET $${params.length + 1}`;
+        params.push(offset);
+    }
 
     try {
-        let customers;
-
-        if (cpf) {
-            customers = await connection.query("SELECT * FROM customers WHERE cpf LIKE $1 || '%'", [cpf]);
-        } else {
-            customers = await connection.query('SELECT * FROM customers');
-        }
+        const customers = await connection.query(
+            `SELECT 
+                customers.*,
+                birthday::VARCHAR,
+                COUNT(rentals.id)::double precision AS "rentalsCount"
+            FROM customers
+            LEFT JOIN rentals ON customers.id = "customerId" 
+            GROUP BY customers.id
+            ${filter}`,
+            params
+        );
 
         res.status(200).send(customers.rows);
     } catch (err) {
