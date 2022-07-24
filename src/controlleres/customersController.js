@@ -73,7 +73,9 @@ export async function fetchCustomer(req, res) {
     const customerId = req.params.id;
 
     try {
-        const customer = await connection.query('SELECT * FROM customers WHERE id = $1', [customerId]);
+        const customer = await connection.query('SELECT *, birthday::VARCHAR FROM customers WHERE id = $1', [
+            customerId
+        ]);
 
         if (customer.rowCount === 0) {
             return res.sendStatus(404);
