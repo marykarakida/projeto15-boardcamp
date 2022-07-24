@@ -75,7 +75,9 @@ export async function createRentals(req, res) {
             return res.sendStatus(400);
         }
 
-        const rentals = await connection.query('SELECT * FROM rentals WHERE "gameId" = $1', [gameId]);
+        const rentals = await connection.query('SELECT * FROM rentals WHERE "gameId" = $1 AND "returnDate" IS NULL', [
+            gameId
+        ]);
 
         if (rentals.rowCount === game.rows[0].stockTotal) {
             return res.sendStatus(400);
