@@ -17,7 +17,7 @@ export default async function validateGame(req, res, next) {
             return res.sendStatus(400);
         }
 
-        const games = await connection.query('SELECT * FROM games WHERE name = $1', [newGame.name]);
+        const games = await connection.query(`SELECT * FROM games WHERE LOWER(name) LIKE LOWER($1)`, [newGame.name]);
 
         if (games.rowCount === 1) {
             return res.sendStatus(409);
