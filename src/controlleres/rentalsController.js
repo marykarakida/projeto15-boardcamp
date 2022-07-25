@@ -29,7 +29,7 @@ export async function listRentals(req, res) {
         }
 
         if (order) {
-            filter += `ORDER BY "${order}" ${desc ? 'DESC' : ''}`;
+            filter += `ORDER BY "${order}" ${desc ? 'DESC ' : ''}`;
         }
 
         if (limit) {
